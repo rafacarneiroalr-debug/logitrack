@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0 fw-bold">Lista de Pedidos</h1>
+  <span class="text-muted">{{ pedidos|length }} pedido(s) encontrado(s)</span>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="GET" action="/pedidos" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-muted">Buscar</label>
+        <input type="text" name="busca" class="form-control"
+               placeholder="Número do pedido ou nome do cliente..."
+               value="{{ busca }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos os status</option>
+          {% for key, label in status_labels.items() %}
+          <option value="{{ key }}" {% if filtro_status == key %}selected{% endif %}>
+            {{ label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small fw-semibold text-muted">Região</label>
+        <select name="regiao" class="form-select">
+          <option value="">Todas as regiões</option>
+          {% for r in regioes %}
+          <option value="{{ r }}" {% if filtro_regiao == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search me-1"></i>Filtrar
+        </button>
+        <a href="/pedidos" class="btn btn-outline-secondary" title="Limpar filtros">
+          <i class="bi bi-x-lg"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Região</th>
+            <th>Cidade</th>
+            <th>Data Prevista</th>
+            <th>Status</th>
+            <th class="text-center">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pedidos %}
+          <tr {% if p.atrasado %}class="table-danger"{% endif %}>
+            <td class="fw-bold">
+              {{ p.numero_pedido }}
+              {% if p.atrasado %}
+              <span class="badge bg-danger ms-1 small">Atrasado</span>
+              {% endif %}
+            </td>
+            <td>{{ p.nome_cliente }}</td>
+            <td>{{ p.regiao }}</td>
+            <td>{{ p.cidade }}</td>
+            <td>{{ p.data_fmt }}</td>
+            <td>
+              <span class="badge bg-{{ p.status_color }} {% if p.status_color == 'warning' %}text-dark{% endif %}">
+                {{ p.status_label }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button type="button"
+                      class="btn btn-sm btn-outline-secondary"
+                      title="Editar status"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalStatus"
+                      data-numero="{{ p.numero_pedido }}"
+                      data-status="{{ p.status }}">
+                <i class="bi bi-pencil-fill"></i>
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              Nenhum pedido encontrado com esses filtros.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edição de status -->
+<div class="modal fade" id="modalStatus" tabindex="-1" aria-labelledby="modalStatusLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalStatusLabel">
+          <i class="bi bi-pencil-fill me-2 text-secondary"></i>Atualizar Status
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formStatus" action="#">
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            Pedido: <strong id="modalPedidoNum" class="text-dark"></strong>
+          </p>
+          <label class="form-label fw-semibold small">Novo Status</label>
+          <select name="novo_status" id="modalSelectStatus" class="form-select">
+            {% for key, label in status_labels.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-check2 me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('modalStatus').addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    const numero = btn.dataset.numero;
+    const status = btn.dataset.status;
+
+    document.getElementById('modalPedidoNum').textContent = numero;
+    document.getElementById('formStatus').action = '/pedidos/' + numero + '/status';
+    document.getElementById('modalSelectStatus').value = status;
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="d-flex align-items-center mb-4">
+      <a href="/pedidos" class="btn btn-sm btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <h1 class="h3 mb-0 fw-bold">Novo Pedido</h1>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="POST" action="/pedidos/novo">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Número do Pedido <span class="text-danger">*</span>
+              </label>
+              <input type="text" name="numero_pedido" class="form-control"
+                     placeholder="Ex: PED-016" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Nome do Cliente <span class="text-danger">*</span>
+              </label>
+              <input type="text" name="nome_cliente" class="form-control"
+                     placeholder="Nome completo do destinatário" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Região <span class="text-danger">*</span>
+              </label>
+              <select name="regiao" class="form-select" required>
+                <option value="">Selecione a região...</option>
+                {% for r in regioes %}
+                <option value="{{ r }}">{{ r }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Cidade <span class="text-danger">*</span>
+              </label>
+              <input type="text" name="cidade" class="form-control"
+                     placeholder="Cidade de destino" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                Data Prevista <span class="text-danger">*</span>
+              </label>
+              <input type="date" name="data_prevista" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Status Inicial</label>
+              <select name="status" class="form-select">
+                {% for key, label in status_labels.items() %}
+                <option value="{{ key }}" {% if key == 'pendente' %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-12 pt-2 d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-plus-circle me-2"></i>Cadastrar Pedido
+              </button>
+              <a href="/pedidos" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

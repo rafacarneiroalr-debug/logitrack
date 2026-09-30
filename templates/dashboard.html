@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0 fw-bold">Dashboard</h1>
+  <span class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ hoje }}</span>
+</div>
+
+<!-- Cards de status -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3">
+      <div class="stat-number text-dark">{{ total }}</div>
+      <div class="text-muted small mt-1">Total</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3 border-top border-4 border-warning">
+      <div class="stat-number text-warning">{{ por_status.get('pendente', 0) }}</div>
+      <div class="text-muted small mt-1">Pendentes</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3 border-top border-4 border-primary">
+      <div class="stat-number text-primary">{{ por_status.get('em_rota', 0) }}</div>
+      <div class="text-muted small mt-1">Em Rota</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3 border-top border-4 border-success">
+      <div class="stat-number text-success">{{ por_status.get('entregue', 0) }}</div>
+      <div class="text-muted small mt-1">Entregues</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3 border-top border-4 border-danger">
+      <div class="stat-number text-danger">{{ por_status.get('falhou', 0) }}</div>
+      <div class="text-muted small mt-1">Falharam</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="card stat-card text-center p-3 border-top border-4 border-secondary">
+      <div class="stat-number text-secondary">{{ atrasados|length }}</div>
+      <div class="text-muted small mt-1">Atrasados</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row g-4 mb-4">
+  <div class="col-md-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-muted text-uppercase fw-semibold mb-3">
+          <i class="bi bi-bar-chart me-1"></i>Entregas por Região
+        </h6>
+        <canvas id="chartRegiao" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-muted text-uppercase fw-semibold mb-3">
+          <i class="bi bi-pie-chart me-1"></i>Distribuição por Status
+        </h6>
+        <canvas id="chartStatus" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pedidos Atrasados -->
+{% if atrasados %}
+<div class="card shadow-sm">
+  <div class="card-header bg-danger text-white fw-semibold">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Pedidos Atrasados ({{ atrasados|length }})
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Região</th>
+            <th>Cidade</th>
+            <th>Data Prevista</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in atrasados %}
+          <tr>
+            <td class="fw-bold">{{ p.numero_pedido }}</td>
+            <td>{{ p.nome_cliente }}</td>
+            <td>{{ p.regiao }}</td>
+            <td>{{ p.cidade }}</td>
+            <td class="text-danger fw-semibold">{{ p.data_fmt }}</td>
+            <td>
+              <span class="badge bg-{{ p.status_color }} {% if p.status_color == 'warning' %}text-dark{% endif %}">
+                {{ p.status_label }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-success d-flex align-items-center">
+  <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+  Nenhum pedido em atraso. Tudo em dia!
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Gráfico por Região
+  const regiaoData = {{ por_regiao | tojson }};
+  new Chart(document.getElementById('chartRegiao'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(regiaoData),
+      datasets: [{
+        label: 'Pedidos',
+        data: Object.values(regiaoData),
+        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1'],
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Gráfico por Status
+  const statusData = {{ por_status | tojson }};
+  const statusOrder  = ['pendente', 'em_rota', 'entregue', 'falhou'];
+  const statusLabels = ['Pendente', 'Em Rota', 'Entregue', 'Falhou'];
+  const statusColors = ['#ffc107', '#0d6efd', '#198754', '#dc3545'];
+
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusOrder.map(k => statusData[k] || 0),
+        backgroundColor: statusColors,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+</script>
+{% endblock %}
